@@ -3,15 +3,28 @@ import { api } from "../convex/_generated/api";
 import { SignInForm } from "./SignInForm";
 import { SignOutButton } from "./SignOutButton";
 import { Toaster } from "sonner";
-import { Dashboard } from "./components/Dashboard";
-import { IssueReportForm } from "./components/IssueReportForm";
-import { ProfileSetup } from "./components/ProfileSetup";
-import { ProfileView } from "./components/ProfileView";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
+import { LandingPageSkeleton, DashboardSkeleton, ProfileSkeleton } from "./components/LoadingSkeleton";
+
+// Lazy load components for better performance
+const Dashboard = lazy(() => import("./components/Dashboard").then(module => ({ default: module.Dashboard })));
+const IssueReportForm = lazy(() => import("./components/IssueReportForm").then(module => ({ default: module.IssueReportForm })));
+const ProfileSetup = lazy(() => import("./components/ProfileSetup").then(module => ({ default: module.ProfileSetup })));
+const ProfileView = lazy(() => import("./components/ProfileView").then(module => ({ default: module.ProfileView })));
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const userProfile = useQuery(api.users.getUserProfile);
+
+  // Handle initial load state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 100); // Short delay to show skeleton briefly
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-scroll effect
   useEffect(() => {
@@ -91,23 +104,26 @@ export default function App() {
 
       <main className="relative z-10">
         <Unauthenticated>
-          <div className="min-h-screen p-6">
-            {/* Hero Section */}
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                  <h2 className="text-4xl font-bold text-gradient mb-4">
-                    Welcome to Hostel Hub
-                  </h2>
-                  <p className="text-gray-300 text-lg">
-                    AI-powered issue resolution platform for hostelers
-                  </p>
-                </div>
-                <div className="glass rounded-2xl p-8">
-                  <SignInForm />
+          {isInitialLoad ? (
+            <LandingPageSkeleton />
+          ) : (
+            <div className="min-h-screen p-6">
+              {/* Hero Section */}
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="w-full max-w-md">
+                  <div className="text-center mb-8">
+                    <h2 className="text-4xl font-bold text-gradient mb-4">
+                      Welcome to Hostel Hub
+                    </h2>
+                    <p className="text-gray-300 text-lg">
+                      AI-powered issue resolution platform for hostelers
+                    </p>
+                  </div>
+                  <div className="glass rounded-2xl p-8">
+                    <SignInForm />
+                  </div>
                 </div>
               </div>
-            </div>
 
             {/* How it Works Section */}
             <div className="max-w-6xl mx-auto py-16">
@@ -202,6 +218,7 @@ export default function App() {
               </div>
             </div>
           </div>
+          )}
         </Unauthenticated>
 
         <Authenticated>
@@ -210,7 +227,9 @@ export default function App() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--color-primary)' }}></div>
             </div>
           ) : !userProfile?.profile ? (
-            <ProfileSetup />
+            <Suspense fallback={<ProfileSkeleton />}>
+              <ProfileSetup />
+            </Suspense>
           ) : (
             <div className="container mx-auto px-6 py-8">
               {/* Mobile navigation */}
@@ -251,9 +270,11 @@ export default function App() {
 
               {/* Content */}
               <div className="animate-fade-in">
-                {activeTab === "dashboard" && <Dashboard userProfile={userProfile} />}
-                {activeTab === "report" && <IssueReportForm />}
-                {activeTab === "profile" && <ProfileView userProfile={userProfile} />}
+                <Suspense fallback={<DashboardSkeleton />}>
+                  {activeTab === "dashboard" && <Dashboard userProfile={userProfile} />}
+                  {activeTab === "report" && <IssueReportForm />}
+                  {activeTab === "profile" && <ProfileView userProfile={userProfile} />}
+                </Suspense>
               </div>
             </div>
           )}

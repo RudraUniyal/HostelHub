@@ -81,7 +81,7 @@ export function ProfileView({ userProfile }: ProfileViewProps) {
           <h2 className="text-2xl font-bold text-white">Profile Information</h2>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="dark-button-secondary px-4 py-2 rounded-lg"
+            className="dark-button px-4 py-2 rounded-lg"
           >
             {isEditing ? "Cancel" : "Edit Profile"}
           </button>

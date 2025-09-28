@@ -5,7 +5,10 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
-    react(),
+    react({
+      // Enable React Fast Refresh for better development experience
+      fastRefresh: true,
+    }),
     // The code below enables dev tools like taking screenshots of your site
     // while it is being developed on chef.convex.dev.
     // Feel free to remove this code if you're no longer developing your app with Chef.
@@ -39,5 +42,30 @@ window.addEventListener('message', async (message) => {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    // Optimize build for production
+    target: 'esnext',
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          convex: ['convex'],
+        },
+      },
+    },
+    // Enable source maps for debugging
+    sourcemap: mode === 'development',
+  },
+  server: {
+    // Optimize dev server
+    hmr: {
+      overlay: false,
+    },
+  },
+  optimizeDeps: {
+    // Pre-bundle dependencies for faster loading
+    include: ['react', 'react-dom', 'convex'],
   },
 }));
